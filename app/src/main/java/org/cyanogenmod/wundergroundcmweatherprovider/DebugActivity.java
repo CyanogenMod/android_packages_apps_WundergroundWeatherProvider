@@ -188,6 +188,12 @@ public class DebugActivity extends WUBaseActivity implements
                         weatherInfoBuilder.setHumidity(currentObservationResponse.getHumidity()
                                 .floatValue());
 
+                        // Set wind arguments
+                        weatherInfoBuilder.setWind(
+                                currentObservationResponse.getWindMph().floatValue(),
+                                currentObservationResponse.getWindDegrees().floatValue(),
+                                WeatherContract.WeatherColumns.WindSpeedUnit.MPH);
+
                         ForecastResponse forecastResponse =
                                 wundergroundReponse.getForecast();
 
