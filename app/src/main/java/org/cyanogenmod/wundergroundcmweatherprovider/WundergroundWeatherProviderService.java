@@ -171,8 +171,13 @@ public class WundergroundWeatherProviderService extends WeatherProviderService {
                         return;
                     }
 
+                    // Set city
                     weatherInfoBuilder.setCity(displayLocationResponse.getCity(),
                             displayLocationResponse.getCity());
+
+                    // Set humidity
+                    weatherInfoBuilder.setHumidity(currentObservationResponse.getHumidity()
+                            .floatValue());
 
                     ForecastResponse forecastResponse =
                             wundergroundReponse.getForecast();
