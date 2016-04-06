@@ -35,19 +35,20 @@ import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.fore
 import cyanogenmod.providers.WeatherContract;
 import cyanogenmod.weather.RequestInfo;
 import cyanogenmod.weather.WeatherInfo;
+import cyanogenmod.weather.WeatherLocation;
 import cyanogenmod.weatherservice.ServiceRequest;
 import cyanogenmod.weatherservice.ServiceRequestResult;
 import cyanogenmod.weatherservice.WeatherProviderService;
 
 import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 import java.util.ArrayList;
 
 import javax.inject.Inject;
 
-public class WundergroundWeatherProviderService extends WeatherProviderService {
+public class WundergroundWeatherProviderService extends WeatherProviderService
+        implements WundergroundResponseListener {
+
     private static final String TAG = WundergroundWeatherProviderService.class.getSimpleName();
     private static final int SERVICE_REQUEST_CANCELLED = -1;
     private static final int SERVICE_REQUEST_SUBMITTED = 0;
@@ -92,7 +93,8 @@ public class WundergroundWeatherProviderService extends WeatherProviderService {
                     RequestInfo requestInfo = serviceRequest.getRequestInfo();
                     switch (requestInfo.getRequestType()) {
                         case RequestInfo.TYPE_WEATHER_LOCATION_REQ:
-                            reference.processWeatherLocationRequest(serviceRequest);
+                        case RequestInfo.TYPE_GEO_LOCATION_REQ:
+                            reference.handleWeatherRequest(serviceRequest);
                             break;
                         default:
                             //Don't support anything else, fail.
@@ -112,118 +114,114 @@ public class WundergroundWeatherProviderService extends WeatherProviderService {
         }
     }
 
-    private void processWeatherLocationRequest(final ServiceRequest serviceRequest) {
+    private void handleWeatherRequest(final ServiceRequest serviceRequest) {
         final RequestInfo requestInfo = serviceRequest.getRequestInfo();
         Log.d(TAG, "Received weather request info: " + requestInfo.toString());
 
-        Location location = requestInfo.getLocation();
-        if (location == null) {
-            LocationManager locationManager = (LocationManager)
-                    getSystemService(Context.LOCATION_SERVICE);
-            Criteria criteria = new Criteria();
-            criteria.setAccuracy(Criteria.ACCURACY_HIGH);
-            location = locationManager.getLastKnownLocation(locationManager.getBestProvider(criteria
-                    , false));
+        if (requestInfo.getRequestType() == RequestInfo.TYPE_GEO_LOCATION_REQ) {
+            Location location = requestInfo.getLocation();
+            if (location == null) {
+                LocationManager locationManager = (LocationManager)
+                        getSystemService(Context.LOCATION_SERVICE);
+                Criteria criteria = new Criteria();
+                criteria.setAccuracy(Criteria.ACCURACY_HIGH);
+                location = locationManager.getLastKnownLocation(locationManager.getBestProvider(
+                        criteria, false));
+            }
+            handleRequestByGeoLocation(location, serviceRequest);
+        } else {
+            WeatherLocation weatherLocation = requestInfo.getWeatherLocation();
+            handleRequestByWeatherLocation(weatherLocation, serviceRequest);
         }
+    }
 
+    /**
+     * Enqueue request by geolocation (lat/long)
+     */
+    private void handleRequestByGeoLocation(Location location, final ServiceRequest serviceRequest) {
         Call<WundergroundReponse> wundergroundCall =
                 mWundergroundServiceManager.query(location.getLatitude(),
                         location.getLongitude(), Feature.conditions, Feature.forecast);
-
-        wundergroundCall.enqueue(new Callback<WundergroundReponse>() {
-            @Override
-            public void onResponse(Call<WundergroundReponse> call, Response<WundergroundReponse> response) {
-                if (response.isSuccessful()) {
-                    Log.d(TAG, "Received response:\n" + response.body().toString());
-
-                    WundergroundReponse wundergroundReponse = response.body();
-
-                    if (wundergroundReponse == null) {
-                        Log.d(TAG, "Null wu reponse, return");
-                        serviceRequest.fail();
-                        return;
-                    }
-
-                    CurrentObservationResponse currentObservationResponse =
-                            wundergroundReponse.getCurrentObservation();
-
-                    if (currentObservationResponse == null) {
-                        Log.d(TAG, "Null co reponse, return");
-                        serviceRequest.fail();
-                        return;
-                    }
-
-                    WeatherInfo.Builder weatherInfoBuilder =
-                            new WeatherInfo.Builder(System.currentTimeMillis());
-
-                    weatherInfoBuilder.setTemperature(currentObservationResponse.getTempF()
-                                    .floatValue(),
-                            WeatherContract.WeatherColumns.TempUnit.FAHRENHEIT);
-
-                    weatherInfoBuilder.setWeatherCondition(
-                            WeatherContract.WeatherColumns.WeatherCode.CLOUDY);
-
-                    DisplayLocationResponse displayLocationResponse =
-                            currentObservationResponse.getDisplayLocation();
-
-                    if (displayLocationResponse == null) {
-                        Log.d(TAG, "Null dl reponse, return");
-                        return;
-                    }
-
-                    // Set city
-                    weatherInfoBuilder.setCity(displayLocationResponse.getCity(),
-                            displayLocationResponse.getCity());
-
-                    // Set humidity
-                    weatherInfoBuilder.setHumidity(currentObservationResponse.getHumidity()
-                            .floatValue());
-
-                    ForecastResponse forecastResponse =
-                            wundergroundReponse.getForecast();
-
-                    if (forecastResponse == null) {
-                        Log.d(TAG, "Null fc reponse, return");
-                        serviceRequest.fail();
-                        return;
-                    }
-
-                    SimpleForecastResponse simpleForecastResponse =
-                            forecastResponse.getSimpleForecast();
-
-                    if (simpleForecastResponse == null) {
-                        Log.d(TAG, "Null sf reponse, return");
-                        serviceRequest.fail();
-                        return;
-                    }
-
-                    ArrayList<WeatherInfo.DayForecast> dayForecasts =
-                            ConverterUtils.convertSimpleFCToDayForcast(
-                                    simpleForecastResponse.getForecastDay());
-                    weatherInfoBuilder.setForecast(dayForecasts);
-
-                    ServiceRequestResult serviceRequestResult =
-                            new ServiceRequestResult.Builder()
-                            .setWeatherInfo(weatherInfoBuilder.build()).build();
-                    serviceRequest.complete(serviceRequestResult);
-                } else {
-                    Log.d(TAG, "Response " + response.toString());
-                }
-            }
-
-            @Override
-            public void onFailure(Call<WundergroundReponse> call, Throwable t) {
-                Log.d(TAG, "Failure " + t.toString());
-                serviceRequest.fail();
-            }
-        });
+        wundergroundCall.enqueue(new WundergroundRequestCallback(serviceRequest, this));
     }
 
-    //TODO IMPLEMENT
-    private void processCityNameLookupRequest(final ServiceRequest serviceRequest) {
-        final RequestInfo requestInfo = serviceRequest.getRequestInfo();
-        Log.d(TAG, "Received city lookup request info: " + requestInfo.toString());
+    /**
+     * Enqueue request by weatherlocation
+     */
+    private void handleRequestByWeatherLocation(WeatherLocation weatherLocation,
+            final ServiceRequest serviceRequest) {
+        Call<WundergroundReponse> wundergroundCall =
+                mWundergroundServiceManager.query(
+                        /** todo: ADD STATE TO WEATHER LOCATION API */ null,
+                        weatherLocation.getCity(), Feature.conditions, Feature.forecast);
+        wundergroundCall.enqueue(new WundergroundRequestCallback(serviceRequest, this));
+    }
 
+    @Override
+    public void processWundergroundResponse(WundergroundReponse wundergroundReponse,
+            final ServiceRequest serviceRequest) {
 
+        CurrentObservationResponse currentObservationResponse =
+                wundergroundReponse.getCurrentObservation();
+
+        if (currentObservationResponse == null) {
+            Log.d(TAG, "Null co reponse, return");
+            serviceRequest.fail();
+            return;
+        }
+
+        WeatherInfo.Builder weatherInfoBuilder =
+                new WeatherInfo.Builder(System.currentTimeMillis());
+
+        weatherInfoBuilder.setTemperature(currentObservationResponse.getTempF()
+                        .floatValue(),
+                WeatherContract.WeatherColumns.TempUnit.FAHRENHEIT);
+
+        weatherInfoBuilder.setWeatherCondition(
+                WeatherContract.WeatherColumns.WeatherCode.CLOUDY);
+
+        DisplayLocationResponse displayLocationResponse =
+                currentObservationResponse.getDisplayLocation();
+
+        if (displayLocationResponse == null) {
+            Log.d(TAG, "Null dl reponse, return");
+            return;
+        }
+
+        // Set city
+        weatherInfoBuilder.setCity(displayLocationResponse.getCity(),
+                displayLocationResponse.getCity());
+
+        // Set humidity
+        weatherInfoBuilder.setHumidity(currentObservationResponse.getHumidity()
+                .floatValue());
+
+        ForecastResponse forecastResponse =
+                wundergroundReponse.getForecast();
+
+        if (forecastResponse == null) {
+            Log.d(TAG, "Null fc reponse, return");
+            serviceRequest.fail();
+            return;
+        }
+
+        SimpleForecastResponse simpleForecastResponse =
+                forecastResponse.getSimpleForecast();
+
+        if (simpleForecastResponse == null) {
+            Log.d(TAG, "Null sf reponse, return");
+            serviceRequest.fail();
+            return;
+        }
+
+        ArrayList<WeatherInfo.DayForecast> dayForecasts =
+                ConverterUtils.convertSimpleFCToDayForcast(
+                        simpleForecastResponse.getForecastDay());
+        weatherInfoBuilder.setForecast(dayForecasts);
+
+        ServiceRequestResult serviceRequestResult =
+                new ServiceRequestResult.Builder()
+                        .setWeatherInfo(weatherInfoBuilder.build()).build();
+        serviceRequest.complete(serviceRequestResult);
     }
 }

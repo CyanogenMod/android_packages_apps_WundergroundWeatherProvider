@@ -20,12 +20,16 @@ import com.google.gson.annotations.SerializedName;
 
 import java.io.Serializable;
 
+import cyanogenmod.weatherservice.ServiceRequest;
+
 public class WundergroundReponse implements Serializable {
     @SerializedName("current_observation")
     private CurrentObservationResponse currentObservationResponse;
 
     @SerializedName("forecast")
     private ForecastResponse forecastResponse;
+
+    private ServiceRequest serviceRequest;
 
     public CurrentObservationResponse getCurrentObservation() {
         return currentObservationResponse;
@@ -42,6 +46,14 @@ public class WundergroundReponse implements Serializable {
 
     public void setForecastResponse(ForecastResponse forecastResponse) {
         this.forecastResponse = forecastResponse;
+    }
+
+    public void setServiceRequest(ServiceRequest serviceRequest) {
+        this.serviceRequest = serviceRequest;
+    }
+
+    public ServiceRequest getServiceRequest() {
+        return serviceRequest;
     }
 
     @Override
