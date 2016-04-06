@@ -180,8 +180,13 @@ public class DebugActivity extends WUBaseActivity implements
                             return;
                         }
 
+                        // Set city
                         weatherInfoBuilder.setCity(displayLocationResponse.getCity(),
                                 displayLocationResponse.getCity());
+
+                        // Set humidity
+                        weatherInfoBuilder.setHumidity(currentObservationResponse.getHumidity()
+                                .floatValue());
 
                         ForecastResponse forecastResponse =
                                 wundergroundReponse.getForecast();

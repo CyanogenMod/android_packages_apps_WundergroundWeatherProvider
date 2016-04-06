@@ -45,6 +45,9 @@ public class CurrentObservationResponse implements Serializable {
     @SerializedName("wind_mph")
     private Double windMph;
 
+    @SerializedName("relative_humidity")
+    private String humidity;
+
     public DisplayLocationResponse getDisplayLocation() {
         return displayLocationResponse;
     }
@@ -107,5 +110,10 @@ public class CurrentObservationResponse implements Serializable {
 
     public void setWindMph(Double windMph) {
         this.windMph = windMph;
+    }
+
+    // This comes in as XX% for relative humidty, drop the percentage, return as double
+    public Double getHumidity() {
+        return Double.parseDouble(humidity.substring(0, humidity.length()-1));
     }
 }
