@@ -11,6 +11,6 @@
      limitations under the License.
 -->
 <resources>
-    <string name="app_name">Wunderground CM WeatherProvider</string>
+    <string name="app_name">Weather Underground CM Provider</string>
     <string name="action_settings">Settings</string>
 </resources>
