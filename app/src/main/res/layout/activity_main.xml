@@ -19,18 +19,67 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingBottom="@dimen/activity_vertical_margin" tools:context=".MainActivity">
 
-    <Button
-        android:layout_marginTop="5dp"
+    <TextView
+        android:text="Through CM"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Request WeatherInfo"
-        android:onClick="requestWeatherInfo"/>
+        android:layout_height="wrap_content" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/black" />
 
     <Button
         android:layout_marginTop="5dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Request WeatherInfo Directly"
-        android:onClick="requestWeatherInfoDirectly"/>
+        android:text="Request WeatherInfo By Geo"
+        android:onClick="requestWeatherInfoByGeoLocation"/>
+
+    <Button
+        android:layout_marginTop="5dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Request WeatherInfo By WeatherLocation (City/State)"
+        android:onClick="requestWeatherInfoByWeatherLocationCityState"/>
+
+    <Button
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="5dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Request WeatherInfo By WeatherLocation (ZIP)"
+        android:onClick="requestWeatherInfoByWeatherLocationPostalcode"/>
+
+    <TextView
+        android:text="Direct (bypass service)"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/black" />
+
+    <Button
+        android:layout_marginTop="5dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Request WeatherInfo By Geo"
+        android:onClick="requestWeatherInfoByGeoLocationDirectly"/>
+
+    <Button
+        android:layout_marginTop="5dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Request WeatherInfo By WeatherLocation (City/State)"
+        android:onClick="requestWeatherInfoByWeatherLocationCityStateDirectly"/>
+
+    <Button
+        android:layout_marginTop="5dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Request WeatherInfo By WeatherLocation (ZIP)"
+        android:onClick="requestWeatherInfoByWeatherLocationPostalcodeDirectly"/>
 
 </LinearLayout>

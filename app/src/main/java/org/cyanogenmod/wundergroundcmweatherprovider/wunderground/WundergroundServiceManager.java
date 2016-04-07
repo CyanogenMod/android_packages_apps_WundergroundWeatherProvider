@@ -49,6 +49,11 @@ public class WundergroundServiceManager {
                 coerceVarArgFeaturesToDelimitedString(features));
     }
 
+    public Call<WundergroundReponse> query(String postalCode, FeatureParam... features) {
+        return mWundergroundServiceInterface.query(postalCode,
+                coerceVarArgFeaturesToDelimitedString(features));
+    }
+
     private String coerceVarArgFeaturesToDelimitedString(FeatureParam... featureParams) {
         return Joiner.on('/').join(featureParams);
     }

@@ -150,10 +150,22 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
      */
     private void handleRequestByWeatherLocation(WeatherLocation weatherLocation,
             final ServiceRequest serviceRequest) {
-        Call<WundergroundReponse> wundergroundCall =
-                mWundergroundServiceManager.query(
-                        /** todo: ADD STATE TO WEATHER LOCATION API */ null,
-                        weatherLocation.getCity(), Feature.conditions, Feature.forecast);
+
+        Call<WundergroundReponse> wundergroundCall = null;
+        if (weatherLocation.getCity() != null) {
+            wundergroundCall =
+                    mWundergroundServiceManager.query(
+                            /** todo: ADD STATE TO WEATHER LOCATION API */ "WA",
+                            weatherLocation.getCity(), Feature.conditions, Feature.forecast);
+        } else if (weatherLocation.getPostalCode() != null) {
+            wundergroundCall =
+                    mWundergroundServiceManager.query(weatherLocation.getPostalCode(), Feature.conditions, Feature.forecast);
+        } else {
+            Log.e(TAG, "Unable to handle service request");
+            serviceRequest.fail();
+            return;
+        }
+
         wundergroundCall.enqueue(new WundergroundRequestCallback(serviceRequest, this));
     }
 

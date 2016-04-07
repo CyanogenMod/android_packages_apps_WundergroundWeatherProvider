@@ -45,6 +45,7 @@ import cyanogenmod.providers.WeatherContract;
 import cyanogenmod.weather.CMWeatherManager;
 import cyanogenmod.weather.WeatherInfo;
 
+import cyanogenmod.weather.WeatherLocation;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -55,6 +56,8 @@ public class DebugActivity extends WUBaseActivity implements
         LocationListener {
 
     private static final String TAG = DebugActivity.class.getSimpleName();
+    private static final int TYPE_CITY_STATE = 0;
+    private static final int TYPE_POSTAL_CODE = 1;
 
     @Inject
     WundergroundServiceManager mWundergroundServiceManager;
@@ -95,21 +98,147 @@ public class DebugActivity extends WUBaseActivity implements
         return super.onOptionsItemSelected(item);
     }
 
-    public void requestWeatherInfo(View v) {
+    public void requestWeatherInfoByGeoLocation(View v) {
         mDirectRequest = false;
-        requestWeatherInfo();
+        requestWeatherInfoByGeoLocation();
     }
 
-    public void requestWeatherInfoDirectly(View v) {
+    public void requestWeatherInfoByGeoLocationDirectly(View v) {
         mDirectRequest = true;
-        requestWeatherInfo();
+        requestWeatherInfoByGeoLocation();
     }
 
-    private void requestWeatherInfo() {
-        Log.d(TAG, "Requesting weather!");
+    private void requestWeatherInfoByGeoLocation() {
         Criteria criteria = new Criteria();
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
         mLocationManager.requestSingleUpdate(criteria, this, Looper.getMainLooper());
+    }
+
+    public void requestWeatherInfoByWeatherLocationCityState(View v) {
+        mDirectRequest = false;
+        requestWeatherInfoByWeatherLocation(TYPE_CITY_STATE);
+    }
+
+    public void requestWeatherInfoByWeatherLocationCityStateDirectly(View v) {
+        mDirectRequest = true;
+        requestWeatherInfoByWeatherLocation(TYPE_CITY_STATE);
+    }
+
+    public void requestWeatherInfoByWeatherLocationPostalcode(View v) {
+        mDirectRequest = false;
+        requestWeatherInfoByWeatherLocation(TYPE_POSTAL_CODE);
+    }
+
+    public void requestWeatherInfoByWeatherLocationPostalcodeDirectly(View v) {
+        mDirectRequest = true;
+        requestWeatherInfoByWeatherLocation(TYPE_POSTAL_CODE);
+    }
+
+    private void requestWeatherInfoByWeatherLocation(int type) {
+        WeatherLocation weatherLocation = new WeatherLocation.Builder("Seattle", "Seattle")
+                .setPostalCode("98121")
+                .setCountry("US", "US")
+                .build();
+
+        Log.d(TAG, "Requesting weather by weather location " + weatherLocation);
+        Call<WundergroundReponse> wundergroundCall = null;
+        if (!mDirectRequest) {
+            mWeatherManager.requestWeatherUpdate(weatherLocation, this);
+            return;
+        } else  {
+            if (type == TYPE_CITY_STATE) {
+                wundergroundCall =
+                        mWundergroundServiceManager.query("WA",
+                                weatherLocation.getCity(), Feature.conditions, Feature.forecast);
+            } else if (type == TYPE_POSTAL_CODE) {
+                wundergroundCall =
+                        mWundergroundServiceManager.query(weatherLocation.getPostalCode(),
+                                Feature.conditions, Feature.forecast);
+            }
+        }
+
+        wundergroundCall.enqueue(new Callback<WundergroundReponse>() {
+            @Override
+            public void onResponse(Call<WundergroundReponse> call, Response<WundergroundReponse> response) {
+                if (response.isSuccessful()) {
+                    Log.d(TAG, "Received response:\n" + response.body().toString());
+                    WundergroundReponse wundergroundReponse = response.body();
+
+                    if (wundergroundReponse == null) {
+                        Log.d(TAG, "Null wu reponse, return");
+                        return;
+                    }
+
+                    CurrentObservationResponse currentObservationResponse =
+                            wundergroundReponse.getCurrentObservation();
+
+                    if (currentObservationResponse == null) {
+                        Log.d(TAG, "Null co reponse, return");
+                        return;
+                    }
+
+                    WeatherInfo.Builder weatherInfoBuilder =
+                            new WeatherInfo.Builder(System.currentTimeMillis());
+
+                    weatherInfoBuilder.setTemperature(currentObservationResponse.getTempF()
+                                    .floatValue(),
+                            WeatherContract.WeatherColumns.TempUnit.FAHRENHEIT);
+
+                    weatherInfoBuilder.setWeatherCondition(
+                            WeatherContract.WeatherColumns.WeatherCode.CLOUDY);
+
+                    DisplayLocationResponse displayLocationResponse =
+                            currentObservationResponse.getDisplayLocation();
+
+                    if (displayLocationResponse == null) {
+                        Log.d(TAG, "Null dl reponse, return");
+                        return;
+                    }
+
+                    // Set city
+                    weatherInfoBuilder.setCity(displayLocationResponse.getCity(),
+                            displayLocationResponse.getCity());
+
+                    // Set humidity
+                    weatherInfoBuilder.setHumidity(currentObservationResponse.getHumidity()
+                            .floatValue());
+
+                    // Set wind arguments
+                    weatherInfoBuilder.setWind(
+                            currentObservationResponse.getWindMph().floatValue(),
+                            currentObservationResponse.getWindDegrees().floatValue(),
+                            WeatherContract.WeatherColumns.WindSpeedUnit.MPH);
+
+                    ForecastResponse forecastResponse =
+                            wundergroundReponse.getForecast();
+
+                    if (forecastResponse == null) {
+                        Log.d(TAG, "Null fc reponse, return");
+                        return;
+                    }
+
+                    SimpleForecastResponse simpleForecastResponse =
+                            forecastResponse.getSimpleForecast();
+
+                    if (simpleForecastResponse == null) {
+                        Log.d(TAG, "Null sf reponse, return");
+                        return;
+                    }
+
+                    ArrayList<WeatherInfo.DayForecast> dayForecasts =
+                            ConverterUtils.convertSimpleFCToDayForcast(
+                                    simpleForecastResponse.getForecastDay());
+                    weatherInfoBuilder.setForecast(dayForecasts);
+
+                    Log.d(TAG, "Weather info " + weatherInfoBuilder.build().toString());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<WundergroundReponse> call, Throwable t) {
+                Log.d(TAG, "Failure " + t.toString());
+            }
+        });
     }
 
     @Override
@@ -137,6 +266,7 @@ public class DebugActivity extends WUBaseActivity implements
 
     @Override
     public void onLocationChanged(Location location) {
+        Log.d(TAG, "Requesting weather by location " + location);
         if (mDirectRequest) {
             Call<WundergroundReponse> wundergroundCall =
                     mWundergroundServiceManager.query(location.getLatitude(),
