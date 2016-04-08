@@ -21,6 +21,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Message;
+import android.text.TextUtils;
 import android.util.Log;
 
 import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.ConverterUtils;
@@ -30,6 +31,7 @@ import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.Curr
 import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.DisplayLocationResponse;
 import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.ForecastResponse;
 import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.WundergroundReponse;
+import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.citylookup.CityDisambiguationResponse;
 import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.forecast.SimpleForecastResponse;
 
 import cyanogenmod.providers.WeatherContract;
@@ -43,6 +45,7 @@ import cyanogenmod.weatherservice.WeatherProviderService;
 import retrofit2.Call;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -96,6 +99,9 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
                         case RequestInfo.TYPE_GEO_LOCATION_REQ:
                             reference.handleWeatherRequest(serviceRequest);
                             break;
+                        case RequestInfo.TYPE_LOOKUP_CITY_NAME_REQ:
+                            reference.handleLookupRequest(serviceRequest);
+                            break;
                         default:
                             //Don't support anything else, fail.
                             serviceRequest.fail();
@@ -112,6 +118,22 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
                     }
             }
         }
+    }
+
+    private void handleLookupRequest(ServiceRequest serviceRequest) {
+        final RequestInfo requestInfo = serviceRequest.getRequestInfo();
+
+        String cityName = requestInfo.getCityName();
+
+        if (TextUtils.isEmpty(cityName)) {
+            Log.d(TAG, "Null citname return");
+            serviceRequest.fail();
+            return;
+        }
+
+        Call<WundergroundReponse> wundergroundCall =
+                mWundergroundServiceManager.query(cityName, Feature.geolookup);
+        wundergroundCall.enqueue(new WundergroundRequestCallback(serviceRequest, this));
     }
 
     private void handleWeatherRequest(final ServiceRequest serviceRequest) {
@@ -159,7 +181,8 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
                             weatherLocation.getCity(), Feature.conditions, Feature.forecast);
         } else if (weatherLocation.getPostalCode() != null) {
             wundergroundCall =
-                    mWundergroundServiceManager.query(weatherLocation.getPostalCode(), Feature.conditions, Feature.forecast);
+                    mWundergroundServiceManager.query(weatherLocation.getPostalCode(),
+                            Feature.conditions, Feature.forecast);
         } else {
             Log.e(TAG, "Unable to handle service request");
             serviceRequest.fail();
@@ -172,7 +195,22 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
     @Override
     public void processWundergroundResponse(WundergroundReponse wundergroundReponse,
             final ServiceRequest serviceRequest) {
+        switch (serviceRequest.getRequestInfo().getRequestType()) {
+            case RequestInfo.TYPE_WEATHER_LOCATION_REQ:
+            case RequestInfo.TYPE_GEO_LOCATION_REQ:
+                processWeatherRequest(wundergroundReponse, serviceRequest);
+                break;
+            case RequestInfo.TYPE_LOOKUP_CITY_NAME_REQ:
+                processCityLookupRequest(wundergroundReponse, serviceRequest);
+                break;
+            default:
+                //Don't support anything else, fail.
+                serviceRequest.fail();
+        }
+    }
 
+    private void processWeatherRequest(WundergroundReponse wundergroundReponse,
+            ServiceRequest serviceRequest) {
         CurrentObservationResponse currentObservationResponse =
                 wundergroundReponse.getCurrentObservation();
 
@@ -238,7 +276,24 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
 
         ServiceRequestResult serviceRequestResult =
                 new ServiceRequestResult.Builder()
-                        .setWeatherInfo(weatherInfoBuilder.build()).build();
+                        .setWeatherInfo(weatherInfoBuilder.build())
+                        .build();
+        serviceRequest.complete(serviceRequestResult);
+    }
+
+    private void processCityLookupRequest(WundergroundReponse wundergroundReponse,
+            ServiceRequest serviceRequest) {
+        List<CityDisambiguationResponse> cityDisambiguationResponses =
+                wundergroundReponse.getCityDisambiguation();
+
+        ArrayList<WeatherLocation> weatherLocations =
+                ConverterUtils.convertDisambiguationsToWeatherLocations(
+                        cityDisambiguationResponses);
+
+        ServiceRequestResult serviceRequestResult =
+                new ServiceRequestResult.Builder()
+                        .setLocationLookupList(weatherLocations)
+                        .build();
         serviceRequest.complete(serviceRequestResult);
     }
 }

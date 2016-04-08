@@ -16,6 +16,7 @@
 
 package org.cyanogenmod.wundergroundcmweatherprovider.wunderground;
 
+import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.citylookup.CityDisambiguationResponse;
 import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.forecast.ForecastDayResponse;
 
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ import java.util.List;
 
 import cyanogenmod.providers.WeatherContract;
 import cyanogenmod.weather.WeatherInfo;
+import cyanogenmod.weather.WeatherLocation;
 
 public class ConverterUtils {
 
@@ -41,5 +43,19 @@ public class ConverterUtils {
             dayForecasts.add(dayForecast);
         }
         return dayForecasts;
+    }
+
+    public static ArrayList<WeatherLocation> convertDisambiguationsToWeatherLocations(
+            List<CityDisambiguationResponse> cityDisambiguationResponses) {
+        ArrayList<WeatherLocation> weatherLocations = new ArrayList<>();
+        for (CityDisambiguationResponse cityDisambiguationResponse : cityDisambiguationResponses) {
+            WeatherLocation weatherLocation = new WeatherLocation.Builder(
+                    cityDisambiguationResponse.getCity(), cityDisambiguationResponse.getCity())
+                    .setCountry(cityDisambiguationResponse.getCountry(),
+                            cityDisambiguationResponse.getCountry())
+                    .build();
+            weatherLocations.add(weatherLocation);
+        }
+        return weatherLocations;
     }
 }

@@ -35,9 +35,11 @@ import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.Curr
 import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.DisplayLocationResponse;
 import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.ForecastResponse;
 import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.WundergroundReponse;
+import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.citylookup.CityDisambiguationResponse;
 import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.forecast.SimpleForecastResponse;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -53,6 +55,7 @@ import retrofit2.Response;
 public class DebugActivity extends WUBaseActivity implements
         CMWeatherManager.WeatherServiceProviderChangeListener,
         CMWeatherManager.WeatherUpdateRequestListener,
+        CMWeatherManager.LookupCityRequestListener,
         LocationListener {
 
     private static final String TAG = DebugActivity.class.getSimpleName();
@@ -133,6 +136,47 @@ public class DebugActivity extends WUBaseActivity implements
     public void requestWeatherInfoByWeatherLocationPostalcodeDirectly(View v) {
         mDirectRequest = true;
         requestWeatherInfoByWeatherLocation(TYPE_POSTAL_CODE);
+    }
+
+    public void requestCityDisambiguation(View v) {
+        mDirectRequest = false;
+        requestCityDisambiguation();
+    }
+
+    public void requestCityDisambiguationDirectly(View v) {
+        mDirectRequest = true;
+        requestCityDisambiguation();
+    }
+
+    private static final String HARDCODED_CITY = "DALLAS";
+    private void requestCityDisambiguation() {
+        if (!mDirectRequest) {
+            mWeatherManager.lookupCity(HARDCODED_CITY, this);
+        } else {
+            Call<WundergroundReponse> wundergroundCall =
+                    mWundergroundServiceManager.lookupCity(HARDCODED_CITY);
+            wundergroundCall.enqueue(new Callback<WundergroundReponse>() {
+                @Override
+                public void onResponse(Call<WundergroundReponse> call, Response<WundergroundReponse> response) {
+                    List<CityDisambiguationResponse> cityDisambiguationResponses =
+                            response.body().getCityDisambiguation();
+
+                    ArrayList<WeatherLocation> weatherLocations =
+                            ConverterUtils.convertDisambiguationsToWeatherLocations(
+                                    cityDisambiguationResponses);
+
+                    Log.d(TAG, "Received disambiguation:");
+                    for (WeatherLocation weatherLocation : weatherLocations) {
+                        Log.d(TAG, "Weather location: " + weatherLocation);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<WundergroundReponse> call, Throwable t) {
+
+                }
+            });
+        }
     }
 
     private void requestWeatherInfoByWeatherLocation(int type) {
@@ -375,5 +419,13 @@ public class DebugActivity extends WUBaseActivity implements
     @Override
     public void onProviderDisabled(String s) {
 
+    }
+
+    @Override
+    public void onLookupCityRequestCompleted(ArrayList<WeatherLocation> arrayList) {
+        Log.d(TAG, "Received disambiguation:");
+        for (WeatherLocation weatherLocation : arrayList) {
+            Log.d(TAG, "Weather location: " + weatherLocation);
+        }
     }
 }

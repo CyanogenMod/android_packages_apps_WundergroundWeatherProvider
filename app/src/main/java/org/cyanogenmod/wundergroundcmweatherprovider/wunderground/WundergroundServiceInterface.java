@@ -36,4 +36,7 @@ public interface WundergroundServiceInterface {
     @GET("{features}/q/{postalCode}.json")
     public Call<WundergroundReponse> query(@Path("postalCode") String postalCode,
             @Path(value ="features", encoded = true) String features);
+
+    @GET("q/{city}.json")
+    public Call<WundergroundReponse> lookupCity(@Path("city") String city);
 }

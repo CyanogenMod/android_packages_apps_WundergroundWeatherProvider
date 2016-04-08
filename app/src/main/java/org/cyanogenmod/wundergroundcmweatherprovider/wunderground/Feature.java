@@ -18,7 +18,8 @@ package org.cyanogenmod.wundergroundcmweatherprovider.wunderground;
 
 public enum Feature implements FeatureParam {
     conditions,
-    forecast;
+    forecast,
+    geolookup;
 
     @Override
     public String toString() {

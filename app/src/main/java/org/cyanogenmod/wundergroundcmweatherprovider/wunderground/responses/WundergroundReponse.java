@@ -18,7 +18,11 @@ package org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses;
 
 import com.google.gson.annotations.SerializedName;
 
+import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.citylookup.CityDisambiguationResponse;
+
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import cyanogenmod.weatherservice.ServiceRequest;
 
@@ -28,6 +32,9 @@ public class WundergroundReponse implements Serializable {
 
     @SerializedName("forecast")
     private ForecastResponse forecastResponse;
+
+    @SerializedName("results")
+    private List<CityDisambiguationResponse> cityDisambiguationResponseList = new ArrayList<>();
 
     private ServiceRequest serviceRequest;
 
@@ -50,6 +57,15 @@ public class WundergroundReponse implements Serializable {
 
     public void setServiceRequest(ServiceRequest serviceRequest) {
         this.serviceRequest = serviceRequest;
+    }
+
+    public List<CityDisambiguationResponse> getCityDisambiguation() {
+        return cityDisambiguationResponseList;
+    }
+
+    public void setCityDisambiguationResponseList(
+            List<CityDisambiguationResponse> cityDisambiguationResponseList) {
+        this.cityDisambiguationResponseList = cityDisambiguationResponseList;
     }
 
     public ServiceRequest getServiceRequest() {
