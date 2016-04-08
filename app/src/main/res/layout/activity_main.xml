@@ -30,26 +30,28 @@
         android:background="@android:color/black" />
 
     <Button
-        android:layout_marginTop="5dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Request WeatherInfo By Geo"
         android:onClick="requestWeatherInfoByGeoLocation"/>
 
     <Button
-        android:layout_marginTop="5dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Request WeatherInfo By WeatherLocation (City/State)"
         android:onClick="requestWeatherInfoByWeatherLocationCityState"/>
 
     <Button
-        android:layout_marginTop="5dp"
-        android:layout_marginBottom="5dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Request WeatherInfo By WeatherLocation (ZIP)"
         android:onClick="requestWeatherInfoByWeatherLocationPostalcode"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Request City Disambiguation (DALLAS)"
+        android:onClick="requestCityDisambiguation"/>
 
     <TextView
         android:text="Direct (bypass service)"
@@ -62,24 +64,27 @@
         android:background="@android:color/black" />
 
     <Button
-        android:layout_marginTop="5dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Request WeatherInfo By Geo"
         android:onClick="requestWeatherInfoByGeoLocationDirectly"/>
 
     <Button
-        android:layout_marginTop="5dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Request WeatherInfo By WeatherLocation (City/State)"
         android:onClick="requestWeatherInfoByWeatherLocationCityStateDirectly"/>
 
     <Button
-        android:layout_marginTop="5dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Request WeatherInfo By WeatherLocation (ZIP)"
         android:onClick="requestWeatherInfoByWeatherLocationPostalcodeDirectly"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Request City Disambiguation (DALLAS)"
+        android:onClick="requestCityDisambiguationDirectly"/>
 
 </LinearLayout>
