@@ -183,6 +183,7 @@ public class DebugActivity extends WUBaseActivity implements
         WeatherLocation weatherLocation = new WeatherLocation.Builder("Seattle", "Seattle")
                 .setPostalCode("98121")
                 .setCountry("US", "US")
+                .setState("WA")
                 .build();
 
         Log.d(TAG, "Requesting weather by weather location " + weatherLocation);
@@ -193,7 +194,7 @@ public class DebugActivity extends WUBaseActivity implements
         } else  {
             if (type == TYPE_CITY_STATE) {
                 wundergroundCall =
-                        mWundergroundServiceManager.query("WA",
+                        mWundergroundServiceManager.query(weatherLocation.getState(),
                                 weatherLocation.getCity(), Feature.conditions, Feature.forecast);
             } else if (type == TYPE_POSTAL_CODE) {
                 wundergroundCall =
@@ -223,11 +224,10 @@ public class DebugActivity extends WUBaseActivity implements
                     }
 
                     WeatherInfo.Builder weatherInfoBuilder =
-                            new WeatherInfo.Builder(System.currentTimeMillis());
-
-                    weatherInfoBuilder.setTemperature(currentObservationResponse.getTempF()
-                                    .floatValue(),
-                            WeatherContract.WeatherColumns.TempUnit.FAHRENHEIT);
+                            new WeatherInfo.Builder(
+                                    currentObservationResponse.getDisplayLocation().getCity(),
+                                    currentObservationResponse.getTempF(),
+                                    WeatherContract.WeatherColumns.TempUnit.FAHRENHEIT);
 
                     weatherInfoBuilder.setWeatherCondition(
                             WeatherContract.WeatherColumns.WeatherCode.CLOUDY);
@@ -239,10 +239,6 @@ public class DebugActivity extends WUBaseActivity implements
                         Log.d(TAG, "Null dl reponse, return");
                         return;
                     }
-
-                    // Set city
-                    weatherInfoBuilder.setCity(displayLocationResponse.getCity(),
-                            displayLocationResponse.getCity());
 
                     // Set humidity
                     weatherInfoBuilder.setHumidity(currentObservationResponse.getHumidity()
@@ -338,11 +334,10 @@ public class DebugActivity extends WUBaseActivity implements
                         }
 
                         WeatherInfo.Builder weatherInfoBuilder =
-                                new WeatherInfo.Builder(System.currentTimeMillis());
-
-                        weatherInfoBuilder.setTemperature(currentObservationResponse.getTempF()
-                                        .floatValue(),
-                                WeatherContract.WeatherColumns.TempUnit.FAHRENHEIT);
+                                new WeatherInfo.Builder(
+                                        currentObservationResponse.getDisplayLocation().getCity(),
+                                        currentObservationResponse.getTempF(),
+                                        WeatherContract.WeatherColumns.TempUnit.FAHRENHEIT);
 
                         weatherInfoBuilder.setWeatherCondition(
                                 WeatherContract.WeatherColumns.WeatherCode.CLOUDY);
@@ -354,10 +349,6 @@ public class DebugActivity extends WUBaseActivity implements
                             Log.d(TAG, "Null dl reponse, return");
                             return;
                         }
-
-                        // Set city
-                        weatherInfoBuilder.setCity(displayLocationResponse.getCity(),
-                                displayLocationResponse.getCity());
 
                         // Set humidity
                         weatherInfoBuilder.setHumidity(currentObservationResponse.getHumidity()

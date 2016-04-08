@@ -35,10 +35,10 @@ public class ConverterUtils {
             List<ForecastDayResponse> forecastDayResponses) {
         ArrayList<WeatherInfo.DayForecast> dayForecasts = new ArrayList<>();
         for (ForecastDayResponse forecastDayResponse : forecastDayResponses) {
-            WeatherInfo.DayForecast dayForecast = new WeatherInfo.DayForecast.Builder()
+            WeatherInfo.DayForecast dayForecast = new WeatherInfo.DayForecast
+                    .Builder(WeatherContract.WeatherColumns.WeatherCode.SUNNY)
                     .setHigh(forecastDayResponse.getHigh().getFahrenheit())
                     .setLow(forecastDayResponse.getLow().getFahrenheit())
-                    .setWeatherCondition(WeatherContract.WeatherColumns.WeatherCode.SUNNY)
                     .build();
             dayForecasts.add(dayForecast);
         }

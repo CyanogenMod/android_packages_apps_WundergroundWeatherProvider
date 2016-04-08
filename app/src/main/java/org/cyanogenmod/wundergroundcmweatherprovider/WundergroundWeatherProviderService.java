@@ -95,8 +95,8 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
                 case SERVICE_REQUEST_SUBMITTED:
                     RequestInfo requestInfo = serviceRequest.getRequestInfo();
                     switch (requestInfo.getRequestType()) {
-                        case RequestInfo.TYPE_WEATHER_LOCATION_REQ:
-                        case RequestInfo.TYPE_GEO_LOCATION_REQ:
+                        case RequestInfo.TYPE_WEATHER_BY_WEATHER_LOCATION_REQ:
+                        case RequestInfo.TYPE_WEATHER_BY_GEO_LOCATION_REQ:
                             reference.handleWeatherRequest(serviceRequest);
                             break;
                         case RequestInfo.TYPE_LOOKUP_CITY_NAME_REQ:
@@ -132,7 +132,7 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
         }
 
         Call<WundergroundReponse> wundergroundCall =
-                mWundergroundServiceManager.query(cityName, Feature.geolookup);
+                mWundergroundServiceManager.query(cityName);
         wundergroundCall.enqueue(new WundergroundRequestCallback(serviceRequest, this));
     }
 
@@ -140,7 +140,7 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
         final RequestInfo requestInfo = serviceRequest.getRequestInfo();
         Log.d(TAG, "Received weather request info: " + requestInfo.toString());
 
-        if (requestInfo.getRequestType() == RequestInfo.TYPE_GEO_LOCATION_REQ) {
+        if (requestInfo.getRequestType() == RequestInfo.TYPE_WEATHER_BY_GEO_LOCATION_REQ) {
             Location location = requestInfo.getLocation();
             if (location == null) {
                 LocationManager locationManager = (LocationManager)
@@ -176,8 +176,7 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
         Call<WundergroundReponse> wundergroundCall = null;
         if (weatherLocation.getCity() != null) {
             wundergroundCall =
-                    mWundergroundServiceManager.query(
-                            /** todo: ADD STATE TO WEATHER LOCATION API */ "WA",
+                    mWundergroundServiceManager.query(weatherLocation.getState(),
                             weatherLocation.getCity(), Feature.conditions, Feature.forecast);
         } else if (weatherLocation.getPostalCode() != null) {
             wundergroundCall =
@@ -196,8 +195,8 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
     public void processWundergroundResponse(WundergroundReponse wundergroundReponse,
             final ServiceRequest serviceRequest) {
         switch (serviceRequest.getRequestInfo().getRequestType()) {
-            case RequestInfo.TYPE_WEATHER_LOCATION_REQ:
-            case RequestInfo.TYPE_GEO_LOCATION_REQ:
+            case RequestInfo.TYPE_WEATHER_BY_WEATHER_LOCATION_REQ:
+            case RequestInfo.TYPE_WEATHER_BY_GEO_LOCATION_REQ:
                 processWeatherRequest(wundergroundReponse, serviceRequest);
                 break;
             case RequestInfo.TYPE_LOOKUP_CITY_NAME_REQ:
@@ -221,11 +220,9 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
         }
 
         WeatherInfo.Builder weatherInfoBuilder =
-                new WeatherInfo.Builder(System.currentTimeMillis());
-
-        weatherInfoBuilder.setTemperature(currentObservationResponse.getTempF()
-                        .floatValue(),
-                WeatherContract.WeatherColumns.TempUnit.FAHRENHEIT);
+                new WeatherInfo.Builder(currentObservationResponse.getDisplayLocation().getCity(),
+                        currentObservationResponse.getTempF(),
+                        WeatherContract.WeatherColumns.TempUnit.FAHRENHEIT);
 
         weatherInfoBuilder.setWeatherCondition(
                 WeatherContract.WeatherColumns.WeatherCode.CLOUDY);
@@ -237,10 +234,6 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
             Log.d(TAG, "Null dl reponse, return");
             return;
         }
-
-        // Set city
-        weatherInfoBuilder.setCity(displayLocationResponse.getCity(),
-                displayLocationResponse.getCity());
 
         // Set humidity
         weatherInfoBuilder.setHumidity(currentObservationResponse.getHumidity()
