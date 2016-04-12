@@ -132,7 +132,7 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
         }
 
         Call<WundergroundReponse> wundergroundCall =
-                mWundergroundServiceManager.query(cityName);
+                mWundergroundServiceManager.lookupCity(cityName);
         wundergroundCall.enqueue(new WundergroundRequestCallback(serviceRequest, this));
     }
 
