@@ -21,7 +21,7 @@ import com.google.gson.annotations.SerializedName;
 import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.citylookup.CityDisambiguationResponse;
 
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import cyanogenmod.weatherservice.ServiceRequest;
@@ -33,8 +33,8 @@ public class WundergroundReponse implements Serializable {
     @SerializedName("forecast")
     private ForecastResponse forecastResponse;
 
-    @SerializedName("results")
-    private List<CityDisambiguationResponse> cityDisambiguationResponseList = new ArrayList<>();
+    @SerializedName("response")
+    private CityDisambiguationResponseInner disambiguationResponse;
 
     private ServiceRequest serviceRequest;
 
@@ -60,22 +60,37 @@ public class WundergroundReponse implements Serializable {
     }
 
     public List<CityDisambiguationResponse> getCityDisambiguation() {
-        return cityDisambiguationResponseList;
+        return disambiguationResponse != null
+                ? disambiguationResponse.cityDisambiguationResponseList : null;
     }
 
     public void setCityDisambiguationResponseList(
             List<CityDisambiguationResponse> cityDisambiguationResponseList) {
-        this.cityDisambiguationResponseList = cityDisambiguationResponseList;
+        if (disambiguationResponse != null) {
+            disambiguationResponse.cityDisambiguationResponseList = cityDisambiguationResponseList;
+        }
     }
 
     public ServiceRequest getServiceRequest() {
         return serviceRequest;
     }
 
+    public class CityDisambiguationResponseInner {
+        @SerializedName("results")
+        private List<CityDisambiguationResponse> cityDisambiguationResponseList;
+
+        @Override
+        public String toString() {
+                return "CityDisambiguationResponseInner [" + (cityDisambiguationResponseList != null
+                    ? Arrays.toString(cityDisambiguationResponseList.toArray()) : "") + " ]";
+        }
+    }
+
     @Override
     public String toString() {
         return "WundergroundResponse:\n"
-                + "Forecast: " + forecastResponse.toString() + "\n"
-                + "Current Observation: " + currentObservationResponse.toString();
+                + "CityDisambiguationResponse: " + disambiguationResponse + "\n"
+                + "Forecast: " + forecastResponse + "\n"
+                + "Current Observation: " + currentObservationResponse;
     }
 }
