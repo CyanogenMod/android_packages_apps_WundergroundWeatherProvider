@@ -278,6 +278,11 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
         List<CityDisambiguationResponse> cityDisambiguationResponses =
                 wundergroundReponse.getCityDisambiguation();
 
+        if (cityDisambiguationResponses == null) {
+            serviceRequest.fail();
+            return;
+        }
+
         ArrayList<WeatherLocation> weatherLocations =
                 ConverterUtils.convertDisambiguationsToWeatherLocations(
                         cityDisambiguationResponses);
