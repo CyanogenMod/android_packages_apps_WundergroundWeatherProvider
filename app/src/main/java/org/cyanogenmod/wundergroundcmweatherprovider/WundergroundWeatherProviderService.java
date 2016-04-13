@@ -268,8 +268,7 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
         weatherInfoBuilder.setForecast(dayForecasts);
 
         ServiceRequestResult serviceRequestResult =
-                new ServiceRequestResult.Builder()
-                        .setWeatherInfo(weatherInfoBuilder.build())
+                new ServiceRequestResult.Builder(weatherInfoBuilder.build())
                         .build();
         serviceRequest.complete(serviceRequestResult);
     }
@@ -284,8 +283,7 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
                         cityDisambiguationResponses);
 
         ServiceRequestResult serviceRequestResult =
-                new ServiceRequestResult.Builder()
-                        .setLocationLookupList(weatherLocations)
+                new ServiceRequestResult.Builder(weatherLocations)
                         .build();
         serviceRequest.complete(serviceRequestResult);
     }
