@@ -21,6 +21,7 @@ import com.google.gson.annotations.SerializedName;
 import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.citylookup.CityDisambiguationResponse;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -77,7 +78,7 @@ public class WundergroundReponse implements Serializable {
 
     public class CityDisambiguationResponseInner {
         @SerializedName("results")
-        private List<CityDisambiguationResponse> cityDisambiguationResponseList;
+        private List<CityDisambiguationResponse> cityDisambiguationResponseList = new ArrayList<>();
 
         @Override
         public String toString() {
