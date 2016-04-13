@@ -50,9 +50,8 @@ public class ConverterUtils {
         ArrayList<WeatherLocation> weatherLocations = new ArrayList<>();
         for (CityDisambiguationResponse cityDisambiguationResponse : cityDisambiguationResponses) {
             WeatherLocation weatherLocation = new WeatherLocation.Builder(
-                    cityDisambiguationResponse.getCity(), cityDisambiguationResponse.getCity())
-                    .setCountry(cityDisambiguationResponse.getCountry(),
-                            cityDisambiguationResponse.getCountry())
+                    cityDisambiguationResponse.getCity())
+                    .setCountry(cityDisambiguationResponse.getCountry())
                     .build();
             weatherLocations.add(weatherLocation);
         }

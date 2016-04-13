@@ -45,6 +45,7 @@ import javax.inject.Inject;
 
 import cyanogenmod.providers.WeatherContract;
 import cyanogenmod.weather.CMWeatherManager;
+import cyanogenmod.weather.RequestInfo;
 import cyanogenmod.weather.WeatherInfo;
 import cyanogenmod.weather.WeatherLocation;
 
@@ -182,7 +183,7 @@ public class DebugActivity extends WUBaseActivity implements
     private void requestWeatherInfoByWeatherLocation(int type) {
         WeatherLocation weatherLocation = new WeatherLocation.Builder("Seattle", "Seattle")
                 .setPostalCode("98121")
-                .setCountry("US", "US")
+                .setCountry("US")
                 .setState("WA")
                 .build();
 
@@ -290,17 +291,20 @@ public class DebugActivity extends WUBaseActivity implements
     @Override
     public void onWeatherRequestCompleted(int i, WeatherInfo weatherInfo) {
         switch (i) {
-            case CMWeatherManager.WEATHER_REQUEST_COMPLETED:
+            case CMWeatherManager.RequestStatus.COMPLETED:
                 Log.d(TAG, "Weather request completed: " + weatherInfo.toString());
                 break;
-            case CMWeatherManager.WEATHER_REQUEST_FAILED:
+            case CMWeatherManager.RequestStatus.FAILED:
                 Log.d(TAG, "Weather request failed!");
                 break;
-            case CMWeatherManager.WEATHER_REQUEST_ALREADY_IN_PROGRESS:
+            case CMWeatherManager.RequestStatus.ALREADY_IN_PROGRESS:
                 Log.d(TAG, "Weather request already in progress");
                 break;
-            case CMWeatherManager.WEATHER_REQUEST_SUBMITTED_TOO_SOON:
+            case CMWeatherManager.RequestStatus.SUBMITTED_TOO_SOON:
                 Log.d(TAG, "Weather request submitted too soon");
+                break;
+            case CMWeatherManager.RequestStatus.NO_MATCH_FOUND:
+                Log.d(TAG, "Weather request match not found");
                 break;
         }
     }
@@ -413,10 +417,14 @@ public class DebugActivity extends WUBaseActivity implements
     }
 
     @Override
-    public void onLookupCityRequestCompleted(ArrayList<WeatherLocation> arrayList) {
+    public void onLookupCityRequestCompleted(int state, List<WeatherLocation> arrayList) {
         Log.d(TAG, "Received disambiguation:");
-        for (WeatherLocation weatherLocation : arrayList) {
-            Log.d(TAG, "Weather location: " + weatherLocation);
+        if (state == CMWeatherManager.RequestStatus.COMPLETED) {
+            for (WeatherLocation weatherLocation : arrayList) {
+                Log.d(TAG, "Weather location: " + weatherLocation);
+            }
+        } else {
+            Log.d(TAG, "Received state " + state);
         }
     }
 }
