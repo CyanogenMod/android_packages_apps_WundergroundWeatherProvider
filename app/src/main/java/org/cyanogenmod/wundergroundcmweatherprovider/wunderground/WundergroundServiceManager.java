@@ -64,13 +64,13 @@ public class WundergroundServiceManager {
 
     private Retrofit buildRestAdapter(String apiKey) {
         //TODO: Wrap this in debug flag
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+        //HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        //interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        //OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
 
         return new Retrofit.Builder()
                 .baseUrl("http://api.wunderground.com/api/" + apiKey + "/")
-                .client(client)
+                //.client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
     }
