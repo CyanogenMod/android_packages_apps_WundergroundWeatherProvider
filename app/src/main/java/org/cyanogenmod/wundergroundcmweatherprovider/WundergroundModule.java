@@ -16,6 +16,9 @@
 
 package org.cyanogenmod.wundergroundcmweatherprovider;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.WundergroundServiceManager;
 
 import javax.inject.Singleton;
@@ -26,12 +29,14 @@ import dagger.Provides;
 @Module(
         injects = {
                 DebugActivity.class,
-                WundergroundWeatherProviderService.class
+                WundergroundWeatherProviderService.class,
+                WUBasePreferenceActivity.class
         }
 )
 public class WundergroundModule {
 
-    private static final String API_KEY = "API_KEY";
+    public static final String SHARED_PREFS_KEY = "WU_SHARED_PREFS";
+    public static final String API_KEY = "API_KEY";
     private WundergroundCMApplication mWeatherviewApplication;
 
     public WundergroundModule(WundergroundCMApplication weatherviewApplication) {
@@ -41,6 +46,9 @@ public class WundergroundModule {
     @Provides
     @Singleton
     public WundergroundServiceManager providesWundergroundServiceManager() {
-        return new WundergroundServiceManager(API_KEY);
+        SharedPreferences sharedPreferences = mWeatherviewApplication.getSharedPreferences(
+                SHARED_PREFS_KEY, Context.MODE_PRIVATE);
+        String apikey = sharedPreferences.getString(API_KEY, null);
+        return new WundergroundServiceManager(apikey);
     }
 }
