@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<weather-provider-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:settingsActivity="org.cyanogenmod.wundergroundcmweatherprovider.WUBasePreferenceActivity" />
