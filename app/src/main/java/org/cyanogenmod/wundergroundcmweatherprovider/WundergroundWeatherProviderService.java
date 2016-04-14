@@ -224,9 +224,6 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
                         currentObservationResponse.getTempF(),
                         WeatherContract.WeatherColumns.TempUnit.FAHRENHEIT);
 
-        weatherInfoBuilder.setWeatherCondition(
-                WeatherContract.WeatherColumns.WeatherCode.CLOUDY);
-
         DisplayLocationResponse displayLocationResponse =
                 currentObservationResponse.getDisplayLocation();
 

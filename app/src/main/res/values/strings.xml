@@ -11,6 +11,12 @@
      limitations under the License.
 -->
 <resources>
-    <string name="app_name">Weather Underground CM Provider</string>
-    <string name="action_settings">Settings</string>
+     <string name="app_name">Weather Underground CM Provider</string>
+     <string name="action_settings">Settings</string>
+
+     <string name="authentication_preference_category_title">Authentication</string>
+     <string name="authentication_preference_api_key">API key</string>
+     <string name="authentication_preference_api_key_summary">API key to be utilized for Weather Underground authentication</string>
+     <string name="authentication_preference_account_create">Create account</string>
+     <string name="authentication_preference_account_create_summary">Create an account to get an API key for weather data usage</string>
 </resources>
