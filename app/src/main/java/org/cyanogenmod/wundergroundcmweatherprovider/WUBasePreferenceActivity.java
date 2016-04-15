@@ -15,6 +15,7 @@
  */
 package org.cyanogenmod.wundergroundcmweatherprovider;
 
+import android.app.ActionBar;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -25,6 +26,8 @@ import android.preference.EditTextPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.text.Editable;
+import android.view.Menu;
+import android.view.MenuItem;
 
 public class WUBasePreferenceActivity extends PreferenceActivity implements Preference.OnPreferenceChangeListener, Preference.OnPreferenceClickListener {
 
@@ -47,6 +50,21 @@ public class WUBasePreferenceActivity extends PreferenceActivity implements Pref
         mApiKeyPreference = (EditTextPreference) findPreference(API_KEY_KEY);
         mApiKeyPreference.setOnPreferenceChangeListener(this);
         mCreateAccountPreference.setOnPreferenceClickListener(this);
+
+        ActionBar actionBar = getActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                finish();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override

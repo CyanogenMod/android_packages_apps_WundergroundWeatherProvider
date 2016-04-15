@@ -11,7 +11,7 @@
      limitations under the License.
 -->
 <resources>
-    <string name="app_name">Weather Underground CM Provider</string>
+    <string name="app_name">Weather Underground</string>
     <string name="action_settings">Settings</string>
 
     <string name="authentication_preference_category_title">Authentication</string>
@@ -19,4 +19,7 @@
     <string name="authentication_preference_api_key_summary">API key to be utilized for Weather Underground authentication</string>
     <string name="authentication_preference_account_create">Create account</string>
     <string name="authentication_preference_account_create_summary">Create an account to get an API key for weather data usage</string>
+    <string name="about_preference_category_title">About</string>
+    <string name="about_preference">Copyright</string>
+    <string name="about_preference_summary">Weather Underground is a registered trademark of The Weather Channel, LLC. both in the United States and internationally. The Weather Underground Logo is a trademark of Weather Underground, LLC.</string>
 </resources>

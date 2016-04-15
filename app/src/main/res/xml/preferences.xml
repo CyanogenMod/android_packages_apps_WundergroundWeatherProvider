@@ -23,4 +23,12 @@
             android:summary="@string/authentication_preference_api_key_summary"/>
     </PreferenceCategory>
 
+    <PreferenceCategory
+        android:title="@string/about_preference_category_title">
+        <Preference
+            android:title="@string/about_preference"
+            android:summary="@string/about_preference_summary"
+            android:icon="@mipmap/ic_launcher"/>
+    </PreferenceCategory>
+
 </PreferenceScreen>
