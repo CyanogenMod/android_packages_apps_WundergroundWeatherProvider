@@ -20,6 +20,7 @@ import android.util.Log;
 
 import com.google.common.base.Joiner;
 
+import org.cyanogenmod.wundergroundcmweatherprovider.ApiKeyInterceptor;
 import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.WundergroundReponse;
 
 import okhttp3.OkHttpClient;
@@ -29,10 +30,14 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class WundergroundServiceManager {
-    private final static String TAG = WundergroundServiceManager.class.getSimpleName();
+    private final static String TAG = "WundergroundManager";
+    private final static boolean DEBUG = Log.isLoggable(TAG, Log.VERBOSE);
+
     private final WundergroundServiceInterface mWundergroundServiceInterface;
+    private final ApiKeyInterceptor mApiKeyInterceptor;
 
     public WundergroundServiceManager(String apiKey) {
+        mApiKeyInterceptor = new ApiKeyInterceptor();
         Retrofit baseAdapter = buildRestAdapter(apiKey);
         mWundergroundServiceInterface = baseAdapter.create(WundergroundServiceInterface.class);
     }
@@ -58,19 +63,29 @@ public class WundergroundServiceManager {
         return mWundergroundServiceInterface.lookupCity(city);
     }
 
+    public void updateApiKey(String apiKey) {
+        mApiKeyInterceptor.setApiKey(apiKey);
+    }
+
     private String coerceVarArgFeaturesToDelimitedString(FeatureParam... featureParams) {
         return Joiner.on('/').join(featureParams);
     }
 
     private Retrofit buildRestAdapter(String apiKey) {
-        //TODO: Wrap this in debug flag
-        //HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        //interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        //OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+        final OkHttpClient.Builder builder = new OkHttpClient().newBuilder();
+        if (DEBUG) {
+            final HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+            loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+            builder.addInterceptor(loggingInterceptor);
+        }
+        mApiKeyInterceptor.setApiKey(apiKey);
+        builder.addInterceptor(mApiKeyInterceptor);
+        final OkHttpClient client = builder.build();
 
+        final String baseUrl = "http://api.wunderground.com/api/" + apiKey + "/";
         return new Retrofit.Builder()
-                .baseUrl("http://api.wunderground.com/api/" + apiKey + "/")
-                //.client(client)
+                .baseUrl(baseUrl)
+                .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
     }

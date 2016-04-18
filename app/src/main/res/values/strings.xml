@@ -17,6 +17,8 @@
     <string name="authentication_preference_category_title">Authentication</string>
     <string name="authentication_preference_api_key">API key</string>
     <string name="authentication_preference_api_key_summary">API key to be utilized for Weather Underground authentication</string>
+    <string name="authentication_preference_api_key_verified">Authenticated</string>
+    <string name="authentication_preference_api_key_not_verified">Unable to authenticate</string>
     <string name="authentication_preference_account_create">Create account</string>
     <string name="authentication_preference_account_create_summary">Create an account to get an API key for weather data usage</string>
     <string name="about_preference_category_title">About</string>

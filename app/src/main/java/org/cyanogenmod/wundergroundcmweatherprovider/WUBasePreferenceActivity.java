@@ -20,16 +20,37 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Message;
 import android.preference.EditTextPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.text.Editable;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-public class WUBasePreferenceActivity extends PreferenceActivity implements Preference.OnPreferenceChangeListener, Preference.OnPreferenceClickListener {
+import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.Feature;
+import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.WundergroundServiceManager;
+import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.CurrentObservationResponse;
+import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.WundergroundReponse;
+
+import javax.inject.Inject;
+
+import cyanogenmod.weather.WeatherLocation;
+import retrofit2.Call;
+import retrofit2.Response;
+
+public class WUBasePreferenceActivity extends PreferenceActivity implements
+        Preference.OnPreferenceChangeListener, Preference.OnPreferenceClickListener {
+
+    private static final String TAG = WUBasePreferenceActivity.class.getSimpleName();
 
     private static final String CREATE_ACCOUNT_KEY = "create_account";
     private static final String API_KEY_KEY = "api_key";
@@ -37,8 +58,14 @@ public class WUBasePreferenceActivity extends PreferenceActivity implements Pref
     private static final String WU_CREATE_ACCOUNT_URL =
             "https://www.wunderground.com/weather/api/d/login.html";
 
+    private static final int VERIFY_API_KEY = 0;
+    private static final int UPDATE_SUMMARIES = 1;
+
     private Preference mCreateAccountPreference;
     private EditTextPreference mApiKeyPreference;
+
+    @Inject
+    WundergroundServiceManager mWundergroundServiceManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +81,10 @@ public class WUBasePreferenceActivity extends PreferenceActivity implements Pref
         ActionBar actionBar = getActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
+        }
+
+        if (getSharedPreferences().contains(WundergroundModule.API_KEY_VERIFIED)) {
+            updateSummaries();
         }
     }
 
@@ -72,11 +103,19 @@ public class WUBasePreferenceActivity extends PreferenceActivity implements Pref
         switch (preference.getKey()) {
             case API_KEY_KEY:
                 Editable editText = mApiKeyPreference.getEditText().getText();
-                if (editText != null) {
-                    String text = editText.toString();
-                    SharedPreferences sharedPreferences = getSharedPreferences(
-                            WundergroundModule.SHARED_PREFS_KEY, Context.MODE_PRIVATE);
-                    sharedPreferences.edit().putString(WundergroundModule.API_KEY, text).commit();
+                String text = editText.toString();
+
+                if (!TextUtils.isEmpty(text)) {
+                    SharedPreferences.Editor editor = getSharedPreferences().edit();
+                    editor.putString(WundergroundModule.API_KEY, text);
+                    editor.commit();
+
+                    mWundergroundServiceManager.updateApiKey(text);
+
+                    Message verifyApiKeyMessage = mHandler.obtainMessage();
+                    verifyApiKeyMessage.sendToTarget();
+                } else {
+                    passedVerification(false);
                 }
                 return true;
         }
@@ -98,5 +137,110 @@ public class WUBasePreferenceActivity extends PreferenceActivity implements Pref
                 return true;
         }
         return false;
+    }
+
+    private final NonLeakyMessageHandler mHandler = new NonLeakyMessageHandler(this);
+
+    private static class NonLeakyMessageHandler extends
+            WeakReferenceHandler<WUBasePreferenceActivity> {
+
+        public NonLeakyMessageHandler(WUBasePreferenceActivity reference) {
+            super(reference);
+        }
+
+        @Override
+        protected void handleMessage(WUBasePreferenceActivity reference, Message msg) {
+            switch (msg.what) {
+                case VERIFY_API_KEY:
+                    Log.d(TAG, "Verifying api key...");
+                    reference.verifyReceivedWeatherInfoByPostalCode();
+                    break;
+                case UPDATE_SUMMARIES:
+                    reference.updateSummaries();
+                    break;
+            }
+        }
+    }
+
+    private SharedPreferences getSharedPreferences() {
+        return getSharedPreferences(WundergroundModule.SHARED_PREFS_KEY, Context.MODE_PRIVATE);
+    }
+
+    private void updateSummaries() {
+        final SharedPreferences sharedPreferences = getSharedPreferences();
+        final Resources resources = getResources();
+        boolean verified = sharedPreferences.getBoolean(WundergroundModule.API_KEY_VERIFIED, false);
+
+        Log.d(TAG, "Updating summaries, verified " + verified);
+
+        ForegroundColorSpan foregroundColorSpan = new ForegroundColorSpan(verified ?
+                resources.getColor(R.color.green) :
+                resources.getColor(R.color.red));
+
+        Spannable summary = new SpannableString(verified ?
+                getString(R.string.authentication_preference_api_key_verified) :
+                getString(R.string.authentication_preference_api_key_not_verified));
+
+        summary.setSpan(foregroundColorSpan, 0, summary.length(), 0);
+        mApiKeyPreference.setSummary(summary);
+    }
+
+    private void verifyReceivedWeatherInfoByPostalCode() {
+        WeatherLocation weatherLocation = new WeatherLocation.Builder("Seattle")
+                .setPostalCode("98121")
+                .setCountry("US")
+                .setState("WA")
+                .build();
+
+        Call<WundergroundReponse> wundergroundCall =
+                mWundergroundServiceManager.query(weatherLocation.getPostalCode(),
+                        Feature.conditions, Feature.forecast);
+
+        Log.d(TAG, "Enqueue api request...");
+        wundergroundCall.enqueue(new retrofit2.Callback<WundergroundReponse>() {
+            @Override
+            public void onResponse(Call<WundergroundReponse> call,
+                                   Response<WundergroundReponse> response) {
+                Log.d(TAG, "Response " + response.toString());
+                if (response.isSuccessful()) {
+                    WundergroundReponse wundergroundReponse = response.body();
+
+                    if (wundergroundReponse == null) {
+                        passedVerification(false);
+                        return;
+                    }
+
+                    CurrentObservationResponse currentObservationResponse =
+                            wundergroundReponse.getCurrentObservation();
+
+                    if (currentObservationResponse == null) {
+                        passedVerification(false);
+                    } else {
+                        passedVerification(true);
+                    }
+                } else {
+                    passedVerification(false);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<WundergroundReponse> call, Throwable t) {
+                Log.d(TAG, "Response " + t.toString());
+                passedVerification(false);
+            }
+        });
+    }
+
+    private void passedVerification(boolean passed) {
+        Log.d(TAG, "Passed verification" + passed);
+        final SharedPreferences.Editor editor = getSharedPreferences().edit();
+        editor.putBoolean(WundergroundModule.API_KEY_VERIFIED, passed);
+        editor.apply();
+        update();
+    }
+
+    private void update() {
+        Message message = mHandler.obtainMessage(UPDATE_SUMMARIES);
+        message.sendToTarget();
     }
 }
