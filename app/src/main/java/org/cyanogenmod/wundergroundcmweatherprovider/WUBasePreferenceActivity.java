@@ -22,14 +22,28 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Message;
 import android.preference.EditTextPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.text.Editable;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-public class WUBasePreferenceActivity extends PreferenceActivity implements Preference.OnPreferenceChangeListener, Preference.OnPreferenceClickListener {
+import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.Feature;
+import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.WundergroundServiceManager;
+import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.CurrentObservationResponse;
+import org.cyanogenmod.wundergroundcmweatherprovider.wunderground.responses.WundergroundReponse;
+
+import javax.inject.Inject;
+
+import cyanogenmod.weather.WeatherLocation;
+import retrofit2.Call;
+import retrofit2.Response;
+
+public class WUBasePreferenceActivity extends PreferenceActivity implements
+        Preference.OnPreferenceChangeListener, Preference.OnPreferenceClickListener {
 
     private static final String CREATE_ACCOUNT_KEY = "create_account";
     private static final String API_KEY_KEY = "api_key";
@@ -37,8 +51,14 @@ public class WUBasePreferenceActivity extends PreferenceActivity implements Pref
     private static final String WU_CREATE_ACCOUNT_URL =
             "https://www.wunderground.com/weather/api/d/login.html";
 
+    private static final int VERIFY_API_KEY = 0;
+    private static final int UPDATE_SUMMARIES = 1;
+
     private Preference mCreateAccountPreference;
     private EditTextPreference mApiKeyPreference;
+
+    @Inject
+    WundergroundServiceManager mWundergroundServiceManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +74,10 @@ public class WUBasePreferenceActivity extends PreferenceActivity implements Pref
         ActionBar actionBar = getActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
+        }
+
+        if (getSharedPreferences().contains(WundergroundModule.API_KEY_VERIFIED)) {
+            updateSummaries();
         }
     }
 
@@ -74,9 +98,12 @@ public class WUBasePreferenceActivity extends PreferenceActivity implements Pref
                 Editable editText = mApiKeyPreference.getEditText().getText();
                 if (editText != null) {
                     String text = editText.toString();
-                    SharedPreferences sharedPreferences = getSharedPreferences(
-                            WundergroundModule.SHARED_PREFS_KEY, Context.MODE_PRIVATE);
-                    sharedPreferences.edit().putString(WundergroundModule.API_KEY, text).commit();
+                    SharedPreferences.Editor editor = getSharedPreferences().edit();
+                    editor.putString(WundergroundModule.API_KEY, text);
+                    editor.commit();
+
+                    Message verifyApiKeyMessage = mHandler.obtainMessage();
+                    verifyApiKeyMessage.sendToTarget();
                 }
                 return true;
         }
@@ -98,5 +125,99 @@ public class WUBasePreferenceActivity extends PreferenceActivity implements Pref
                 return true;
         }
         return false;
+    }
+
+    private final NonLeakyMessageHandler mHandler = new NonLeakyMessageHandler(this);
+
+    private static class NonLeakyMessageHandler extends
+            WeakReferenceHandler<WUBasePreferenceActivity> {
+
+        public NonLeakyMessageHandler(WUBasePreferenceActivity reference) {
+            super(reference);
+        }
+
+        @Override
+        protected void handleMessage(WUBasePreferenceActivity reference, Message msg) {
+            switch (msg.what) {
+                case VERIFY_API_KEY:
+                    reference.verifyReceivedWeatherInfoByPostalCode();
+                    break;
+                case UPDATE_SUMMARIES:
+                    reference.updateSummaries();
+                    break;
+            }
+        }
+    }
+
+    private SharedPreferences getSharedPreferences() {
+        return getSharedPreferences(WundergroundModule.SHARED_PREFS_KEY, Context.MODE_PRIVATE);
+    }
+
+    private void updateSummaries() {
+        final SharedPreferences sharedPreferences = getSharedPreferences();
+        mApiKeyPreference.setSummary(
+                sharedPreferences.getBoolean(WundergroundModule.API_KEY_VERIFIED, false) ?
+                        getString(R.string.authentication_preference_api_key_verified) :
+                        getString(R.string.authentication_preference_api_key_not_verified));
+    }
+
+    private void verifyReceivedWeatherInfoByPostalCode() {
+        WeatherLocation weatherLocation = new WeatherLocation.Builder("Seattle")
+                .setPostalCode("98121")
+                .setCountry("US")
+                .setState("WA")
+                .build();
+
+        Call<WundergroundReponse> wundergroundCall =
+                mWundergroundServiceManager.query(weatherLocation.getPostalCode(),
+                        Feature.conditions, Feature.forecast);
+
+        wundergroundCall.enqueue(new retrofit2.Callback<WundergroundReponse>() {
+            @Override
+            public void onResponse(Call<WundergroundReponse> call,
+                                   Response<WundergroundReponse> response) {
+                if (response.isSuccessful()) {
+                    WundergroundReponse wundergroundReponse = response.body();
+
+                    if (wundergroundReponse == null) {
+                        failedVerification();
+                        return;
+                    }
+
+                    CurrentObservationResponse currentObservationResponse =
+                            wundergroundReponse.getCurrentObservation();
+
+                    if (currentObservationResponse == null) {
+                        failedVerification();
+                    } else {
+                        passedVerification();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<WundergroundReponse> call, Throwable t) {
+                failedVerification();
+            }
+        });
+    }
+
+    private void failedVerification() {
+        final SharedPreferences.Editor editor = getSharedPreferences().edit();
+        editor.putBoolean(WundergroundModule.API_KEY_VERIFIED, false);
+        editor.apply();
+        update();
+    }
+
+    private void passedVerification() {
+        final SharedPreferences.Editor editor = getSharedPreferences().edit();
+        editor.putBoolean(WundergroundModule.API_KEY_VERIFIED, true);
+        editor.apply();
+        update();
+    }
+
+    private void update() {
+        Message message = mHandler.obtainMessage(UPDATE_SUMMARIES);
+        message.sendToTarget();
     }
 }
