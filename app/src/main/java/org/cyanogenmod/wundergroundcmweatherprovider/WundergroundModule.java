@@ -37,6 +37,8 @@ public class WundergroundModule {
 
     public static final String SHARED_PREFS_KEY = "WU_SHARED_PREFS";
     public static final String API_KEY = "API_KEY";
+    public static final String API_KEY_VERIFIED = "API_KEY_VERIFIED";
+
     private WundergroundCMApplication mWeatherviewApplication;
 
     public WundergroundModule(WundergroundCMApplication weatherviewApplication) {
