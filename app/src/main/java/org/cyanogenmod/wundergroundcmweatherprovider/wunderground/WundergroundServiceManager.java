@@ -31,7 +31,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class WundergroundServiceManager {
     private final static String TAG = "WundergroundManager";
-    private final static boolean DEBUG = Log.isLoggable(TAG, Log.VERBOSE);
+    private final static boolean DEBUG = true;//Log.isLoggable(TAG, Log.VERBOSE);
 
     private final WundergroundServiceInterface mWundergroundServiceInterface;
     private final ApiKeyInterceptor mApiKeyInterceptor;
