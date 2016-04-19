@@ -241,6 +241,11 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
                 currentObservationResponse.getWindDegrees().floatValue(),
                 WeatherContract.WeatherColumns.WindSpeedUnit.MPH);
 
+        // Set current weather condition
+        weatherInfoBuilder.setWeatherCondition(
+                ConverterUtils.convertWeatherConditionStringToWeatherConditionCode(
+                        currentObservationResponse.getWeather().trim()));
+
         ForecastResponse forecastResponse =
                 wundergroundReponse.getForecast();
 
