@@ -4,6 +4,15 @@ android {
     compileSdkVersion 21
     buildToolsVersion "23.0.1"
 
+    signingConfigs {
+        release {
+            storeFile = getKeyFile("/cyngn-app.keystore")
+            storePassword = prop("signing.storePassword") ?: "android"
+            keyAlias = prop("signing.keyAlias") ?: "androiddebugkey"
+            keyPassword= prop("signing.keyPassword") ?: "android"
+        }
+    }
+
     defaultConfig {
         applicationId "org.cyanogenmod.wundergroundcmweatherprovider"
         minSdkVersion 21
@@ -15,6 +24,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
     packagingOptions {

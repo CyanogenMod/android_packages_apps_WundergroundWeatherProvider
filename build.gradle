@@ -18,3 +18,15 @@ allprojects {
         mavenCentral()
     }
 }
+
+def prop(name) {
+    hasProperty(name) ? getProperty(name) : null
+}
+
+def getKeyFile(keyFile) {
+    file(
+            prop("signing.storeFile")
+                    ?: ((prop("signing.storeDir")
+                    ?: "../../../vendor/cm-priv/keys")
+                    + "/" + keyFile))
+}
