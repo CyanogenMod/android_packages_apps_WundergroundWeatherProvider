@@ -20,6 +20,8 @@
 
     <uses-permission android:name="cyanogenmod.permission.ACCESS_WEATHER_MANAGER" />
 
+    <uses-feature android:name="org.cyanogenmod.weather" android:required="true" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
