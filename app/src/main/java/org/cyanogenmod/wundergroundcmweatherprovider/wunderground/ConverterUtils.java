@@ -150,11 +150,11 @@ public class ConverterUtils {
         sWeatherConditionStringToCode.put("Clear",
                 WeatherContract.WeatherColumns.WeatherCode.SUNNY);
         sWeatherConditionStringToCode.put("Partly Cloudy",
-                WeatherContract.WeatherColumns.WeatherCode.PARTLY_CLOUDY);
+                WeatherContract.WeatherColumns.WeatherCode.PARTLY_CLOUDY_DAY);
         sWeatherConditionStringToCode.put("Mostly Cloudy",
                 WeatherContract.WeatherColumns.WeatherCode.CLOUDY);
         sWeatherConditionStringToCode.put("Scattered Clouds",
-                WeatherContract.WeatherColumns.WeatherCode.PARTLY_CLOUDY);
+                WeatherContract.WeatherColumns.WeatherCode.PARTLY_CLOUDY_DAY);
         sWeatherConditionStringToCode.put("Small Hail",
                 WeatherContract.WeatherColumns.WeatherCode.HAIL);
         sWeatherConditionStringToCode.put("Squalls",
