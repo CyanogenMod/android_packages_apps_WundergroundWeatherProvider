@@ -17,6 +17,7 @@
 package org.cyanogenmod.wundergroundcmweatherprovider;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
@@ -208,6 +209,22 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
         }
     }
 
+    public WeatherInfo.Builder getWeatherInfoBuilder(CurrentObservationResponse currentObservationResponse){
+        boolean celsius = true;
+        WeatherInfo.Builder weatherInfoBuilder;
+        if (celsius) {
+            weatherInfoBuilder =
+                    new WeatherInfo.Builder(currentObservationResponse.getDisplayLocation().getCity(),
+                            currentObservationResponse.getTempC(),
+                            WeatherContract.WeatherColumns.TempUnit.CELSIUS);
+        } else {
+            weatherInfoBuilder =
+                    new WeatherInfo.Builder(currentObservationResponse.getDisplayLocation().getCity(),
+                            currentObservationResponse.getTempF(),
+                            WeatherContract.WeatherColumns.TempUnit.FAHRENHEIT);
+        }
+        return weatherInfoBuilder;
+    }
     private void processWeatherRequest(WundergroundReponse wundergroundReponse,
             ServiceRequest serviceRequest) {
         CurrentObservationResponse currentObservationResponse =
@@ -219,10 +236,7 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
             return;
         }
 
-        WeatherInfo.Builder weatherInfoBuilder =
-                new WeatherInfo.Builder(currentObservationResponse.getDisplayLocation().getCity(),
-                        currentObservationResponse.getTempF(),
-                        WeatherContract.WeatherColumns.TempUnit.FAHRENHEIT);
+        WeatherInfo.Builder weatherInfoBuilder = getWeatherInfoBuilder(currentObservationResponse);
 
         DisplayLocationResponse displayLocationResponse =
                 currentObservationResponse.getDisplayLocation();
