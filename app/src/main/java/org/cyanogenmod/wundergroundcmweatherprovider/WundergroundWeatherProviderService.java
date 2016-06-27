@@ -272,9 +272,6 @@ public class WundergroundWeatherProviderService extends WeatherProviderService
         weatherInfoBuilder.setTodaysHigh(dayForecasts.get(0).getHigh());
         weatherInfoBuilder.setTodaysLow(dayForecasts.get(0).getLow());
 
-        // Remove today
-        dayForecasts.remove(0);
-
         weatherInfoBuilder.setForecast(dayForecasts);
 
         ServiceRequestResult serviceRequestResult =
